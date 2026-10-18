@@ -1,0 +1,2131 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Шахматы и Шашки на двоих</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+    <style>
+        :root {
+            --sq-light: #f0d9b5;
+            --sq-dark: #b58863;
+            --board-border: #5c3a21;
+            --board-inner: #3d2514;
+            --sel-bg: rgba(255, 215, 0, 0.58);
+            --last-bg: rgba(255, 235, 59, 0.42);
+            --hint-color: rgba(20, 83, 45, 0.48);
+            --must-bg: rgba(239, 68, 68, 0.36);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: #ffffff;
+            color: #111827;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            height: 100vh;
+            height: 100dvh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* ЭКРАН НАСТРОЕК И СТАРТА */
+        #startScreen {
+            position: fixed;
+            inset: 0;
+            background: #ffffff;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 16px 14px 28px;
+            overflow-y: auto;
+        }
+
+        .setup-container {
+            width: 100%;
+            max-width: 760px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            margin: auto 0;
+        }
+
+        .setup-header {
+            text-align: center;
+        }
+
+        .setup-header h1 {
+            font-size: 26px;
+            font-weight: 800;
+            color: #111827;
+            letter-spacing: -0.5px;
+        }
+
+        .setup-header p {
+            font-size: 13px;
+            color: #6b7280;
+            margin-top: 3px;
+        }
+
+        .section-block {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 12px;
+        }
+
+        .section-title {
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+
+        /* Выбор игры: Шахматы или Шашки */
+        .game-type-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .game-type-card {
+            background: #ffffff;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 10px 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.15s;
+        }
+
+        .game-type-card.active {
+            border-color: #111827;
+            background: #f3f4f6;
+        }
+
+        .game-type-icon {
+            width: 38px;
+            height: 38px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #e5e7eb;
+            border-radius: 8px;
+            padding: 4px;
+        }
+
+        /* Виды шашек */
+        .checkers-rules-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        @media (max-width: 560px) {
+            .checkers-rules-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Выбор режима поворота */
+        .view-modes-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        @media (max-width: 600px) {
+            .view-modes-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .mode-card {
+            background: #ffffff;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 9px 11px;
+            cursor: pointer;
+            text-align: left;
+            transition: border-color 0.15s, background 0.15s;
+        }
+
+        .mode-card.active {
+            border-color: #111827;
+            background: #f3f4f6;
+        }
+
+        .mode-card-title {
+            font-size: 13px;
+            font-weight: 800;
+            color: #111827;
+            margin-bottom: 2px;
+        }
+
+        .mode-card-desc {
+            font-size: 11.5px;
+            color: #6b7280;
+            line-height: 1.3;
+        }
+
+        /* Сетка выбора досок (12 карт) */
+        .boards-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 7px;
+        }
+
+        @media (max-width: 580px) {
+            .boards-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .board-option {
+            background: #ffffff;
+            border: 2px solid #e5e7eb;
+            border-radius: 9px;
+            padding: 7px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            transition: border-color 0.15s;
+        }
+
+        .board-option.active {
+            border-color: #111827;
+            background: #f3f4f6;
+        }
+
+        .board-swatch {
+            width: 30px;
+            height: 30px;
+            border-radius: 5px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            overflow: hidden;
+            border: 2px solid #374151;
+            flex-shrink: 0;
+        }
+
+        .board-name {
+            font-size: 11.5px;
+            font-weight: 700;
+            color: #1f2937;
+            line-height: 1.15;
+        }
+
+        /* Сетка выбора фигур (8 стилей) */
+        .pieces-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 7px;
+        }
+
+        @media (max-width: 580px) {
+            .pieces-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .piece-option {
+            background: #ffffff;
+            border: 2px solid #e5e7eb;
+            border-radius: 9px;
+            padding: 7px 5px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            transition: border-color 0.15s;
+        }
+
+        .piece-option.active {
+            border-color: #111827;
+            background: #f3f4f6;
+        }
+
+        .piece-preview-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            height: 36px;
+            background: #e5e7eb;
+            border-radius: 6px;
+            padding: 3px 6px;
+            width: 100%;
+        }
+
+        .piece-preview-box svg {
+            width: 28px;
+            height: 28px;
+        }
+
+        .piece-style-name {
+            font-size: 11.5px;
+            font-weight: 700;
+            color: #1f2937;
+            text-align: center;
+        }
+
+        .start-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 4px;
+        }
+
+        .btn-primary {
+            background: #111827;
+            color: #ffffff;
+            border: none;
+            padding: 13px 28px;
+            font-size: 15px;
+            font-weight: 700;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.1s;
+        }
+
+        .btn-primary:hover {
+            background: #1f2937;
+        }
+
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #111827;
+            border: 1px solid #d1d5db;
+            padding: 13px 20px;
+            font-size: 15px;
+            font-weight: 700;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+
+        /* ВЕРХНЯЯ ПАНЕЛЬ ИГРЫ */
+        .top-bar {
+            width: 100%;
+            max-width: 980px;
+            padding: 6px 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 12px;
+            font-weight: 600;
+            gap: 6px;
+            flex-wrap: wrap;
+            background: #ffffff;
+        }
+
+        .score-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .turn-pill {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-weight: 800;
+            font-size: 12px;
+            border: 1px solid #d1d5db;
+            background: #f9fafb;
+            transition: transform 0.3s ease, background 0.2s;
+        }
+
+        .turn-pill.rotated-ui {
+            transform: rotate(180deg);
+        }
+
+        .top-actions {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .btn-small {
+            background: #f9fafb;
+            color: #111827;
+            border: 1px solid #d1d5db;
+            padding: 5px 8px;
+            border-radius: 6px;
+            font-size: 11.5px;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .btn-small:hover {
+            background: #e5e7eb;
+        }
+
+        /* ИГРОВАЯ ЗОНА */
+        .game-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 4px;
+            gap: 5px;
+            overflow: hidden;
+        }
+
+        /* Полоски игроков (сверху — игрок у камеры, снизу — игрок у низа телефона) */
+        .captured-bar {
+            width: min(76vh, 94vw);
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 4px 10px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            transition: transform 0.3s ease, border-color 0.2s, background 0.2s;
+        }
+
+        .captured-bar.active-turn-bar {
+            border-color: #16a34a;
+            background: #f0fdf4;
+        }
+
+        /* Верхняя панель всегда смотрит на игрока со стороны камеры телефона */
+        .captured-bar.rotated-top {
+            transform: rotate(180deg);
+        }
+
+        .captured-left {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .player-tag {
+            font-size: 11.5px;
+            font-weight: 800;
+            color: #334155;
+            white-space: nowrap;
+        }
+
+        .active-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #16a34a;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+
+        .captured-pieces-row {
+            display: flex;
+            align-items: center;
+            flex-wrap: nowrap;
+            gap: 1px;
+            height: 23px;
+            overflow: hidden;
+        }
+
+        .captured-pieces-row svg {
+            width: 21px;
+            height: 21px;
+            flex-shrink: 0;
+        }
+
+        .points-badge {
+            font-size: 11.5px;
+            font-weight: 700;
+            color: #1e293b;
+            background: #e2e8f0;
+            padding: 3px 7px;
+            border-radius: 5px;
+            white-space: nowrap;
+        }
+
+        .points-adv {
+            color: #15803d;
+            font-weight: 800;
+            margin-left: 3px;
+        }
+
+        /* РАМКА И ДОСКА */
+        .board-frame {
+            background: var(--board-border);
+            padding: 8px;
+            border-radius: 8px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.16);
+            transition: background 0.2s;
+        }
+
+        #board {
+            width: min(74vh, 92vw);
+            height: min(74vh, 92vw);
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            border: 2px solid var(--board-inner);
+            position: relative;
+        }
+
+        .sq {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .sq-light {
+            background-color: var(--sq-light);
+        }
+
+        .sq-dark {
+            background-color: var(--sq-dark);
+        }
+
+        .sq-selected::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: var(--sel-bg);
+            pointer-events: none;
+        }
+
+        .sq-last::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: var(--last-bg);
+            pointer-events: none;
+        }
+
+        .sq-must::after {
+            content: "";
+            position: absolute;
+            inset: 2px;
+            border: 2px dashed rgba(220, 38, 38, 0.75);
+            border-radius: 4px;
+            pointer-events: none;
+        }
+
+        .sq-check {
+            background: radial-gradient(circle, #ff4d4d 0%, #dc2626 65%, rgba(185, 28, 28, 0.9) 100%) !important;
+        }
+
+        /* Фигуры 90% клетки с плавным разворотом на 180 градусов к ходящему */
+        .piece-wrap {
+            width: 90%;
+            height: 90%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            z-index: 2;
+            transition: transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .piece-wrap.rotate-to-top {
+            transform: rotate(180deg);
+        }
+
+        .piece-wrap svg {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.26));
+        }
+
+        /* Маркеры доступных ходов */
+        .hint-dot {
+            width: 28%;
+            height: 28%;
+            border-radius: 50%;
+            background: var(--hint-color);
+            pointer-events: none;
+            position: absolute;
+            z-index: 3;
+        }
+
+        .hint-capture {
+            width: 88%;
+            height: 88%;
+            border-radius: 50%;
+            border: 5px solid var(--hint-color);
+            pointer-events: none;
+            position: absolute;
+            z-index: 3;
+        }
+
+        /* Координаты клеток */
+        .coord-rank {
+            position: absolute;
+            top: 2px;
+            left: 3px;
+            font-size: 9.5px;
+            font-weight: 800;
+            line-height: 1;
+            pointer-events: none;
+            z-index: 1;
+            transition: transform 0.25s ease;
+        }
+
+        .coord-file {
+            position: absolute;
+            bottom: 2px;
+            right: 3px;
+            font-size: 9.5px;
+            font-weight: 800;
+            line-height: 1;
+            pointer-events: none;
+            z-index: 1;
+            transition: transform 0.25s ease;
+        }
+
+        .coord-rot {
+            transform: rotate(180deg);
+        }
+
+        /* МОДАЛЬНЫЕ ОКНА */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.48);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 95;
+        }
+
+        .modal-card {
+            background: #ffffff;
+            padding: 22px;
+            border-radius: 14px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+            max-width: 360px;
+            width: 90%;
+            transition: transform 0.25s;
+        }
+
+        .modal-card.rotated-modal {
+            transform: rotate(180deg);
+        }
+
+        .promo-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        .promo-btn {
+            background: var(--sq-light);
+            border: 2px solid var(--sq-dark);
+            border-radius: 10px;
+            padding: 8px;
+            cursor: pointer;
+            height: 66px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .promo-btn:hover {
+            filter: brightness(0.95);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ЭКРАН НАСТРОЕК -->
+    <div id="startScreen">
+        <div class="setup-container">
+            <div class="setup-header">
+                <h1>Шахматы и Шашки на двоих</h1>
+                <p>Играйте вдвоём на одном телефоне друг напротив друга</p>
+            </div>
+
+            <!-- 1. Выбор игры: Шахматы или Шашки -->
+            <div class="section-block">
+                <div class="section-title">1. Выберите игру</div>
+                <div class="game-type-grid">
+                    <div class="game-type-card active" id="cardGameChess" onclick="selectGameType('chess')">
+                        <div class="game-type-icon" id="iconChessPreview"></div>
+                        <div>
+                            <div class="mode-card-title">Шахматы</div>
+                            <div class="mode-card-desc">Полные правила ФИДЕ, рокировка, взятие на проходе, превращение</div>
+                        </div>
+                    </div>
+                    <div class="game-type-card" id="cardGameCheckers" onclick="selectGameType('checkers')">
+                        <div class="game-type-icon" id="iconCheckersPreview"></div>
+                        <div>
+                            <div class="mode-card-title">Шашки</div>
+                            <div class="mode-card-desc">Обязательный бой, цепочки взятий, дамки и разные виды правил</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Разновидности правил шашек (показывается, когда выбраны Шашки) -->
+                <div id="checkersRulesSection" style="display:none; margin-top: 10px; padding-top: 10px; border-top: 1px solid #e5e7eb;">
+                    <div class="section-title" style="margin-bottom:6px;">Разновидность правил шашек:</div>
+                    <div class="checkers-rules-grid" id="checkersRulesGrid">
+                        <div class="mode-card active" data-rule="russian" onclick="selectCheckersRule('russian')">
+                            <div class="mode-card-title">Русские шашки</div>
+                            <div class="mode-card-desc">Бой вперёд и назад, «летающая» дамка на любую дистанцию, превращение на ходу.</div>
+                        </div>
+                        <div class="mode-card" data-rule="english" onclick="selectCheckersRule('english')">
+                            <div class="mode-card-title">Английские (Чекерс)</div>
+                            <div class="mode-card-desc">Простые бьют только вперёд, дамка ходит и бьёт на 1 клетку во все стороны.</div>
+                        </div>
+                        <div class="mode-card" data-rule="giveaway" onclick="selectCheckersRule('giveaway')">
+                            <div class="mode-card-title">Поддавки</div>
+                            <div class="mode-card-desc">Правила русских шашек, но побеждает тот, кто первым отдаст все свои шашки!</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Как работает автоповорот между игроками -->
+            <div class="section-block">
+                <div class="section-title">2. Режим автоповорота (когда телефон лежит между вами)</div>
+                <div class="view-modes-grid" id="viewModeGrid">
+                    <div class="mode-card active" data-mode="faceTurn" onclick="selectViewMode('faceTurn')">
+                        <div class="mode-card-title">Автоповорот к ходящему (За столом)</div>
+                        <div class="mode-card-desc">Вы снизу, соперник сверху (у камеры). Доска не прыгает, а все фигуры после хода поворачиваются лицом к тому, чей ход!</div>
+                    </div>
+                    <div class="mode-card" data-mode="splitFace" onclick="selectViewMode('splitFace')">
+                        <div class="mode-card-title">Свои фигуры к себе</div>
+                        <div class="mode-card-desc">Белые всегда повёрнуты к нижнему игроку, а Чёрные всегда повёрнуты к верхнему игроку у камеры.</div>
+                    </div>
+                    <div class="mode-card" data-mode="boardFlip" onclick="selectViewMode('boardFlip')">
+                        <div class="mode-card-title">Переворот всей доски</div>
+                        <div class="mode-card-desc">Вся доска целиком меняет стороны местами после каждого хода (если передаёте телефон в руки).</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Выбор доски (12 карт) -->
+            <div class="section-block">
+                <div class="section-title">3. Выберите доску (12 тем)</div>
+                <div class="boards-grid" id="boardsGrid"></div>
+            </div>
+
+            <!-- 4. Выбор стиля фигур (8 наборов для шахмат / 6 наборов для шашек) -->
+            <div class="section-block">
+                <div class="section-title" id="piecesSectionTitle">4. Выберите стиль фигур</div>
+                <div class="pieces-grid" id="piecesGrid"></div>
+            </div>
+
+            <div class="start-actions">
+                <button class="btn-primary" onclick="closeSetup(false)">Играть</button>
+                <button class="btn-secondary" onclick="closeSetup(true)">Играть на весь экран</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ВЕРХНЯЯ ПАНЕЛЬ -->
+    <header class="top-bar">
+        <div class="score-box">
+            <span id="gameModeLabel" style="font-weight:800; color:#111827;">Шахматы</span>
+            <span>Белые: <b id="wWins" style="color:#15803d;">0</b></span>
+            <span>Чёрные: <b id="bWins" style="color:#b91c1c;">0</b></span>
+        </div>
+
+        <div id="turnBadge" class="turn-pill">Ход белых</div>
+
+        <div class="top-actions">
+            <button class="btn-small" onclick="switchGameQuick()" id="quickSwitchGameBtn">Игра: Шахматы</button>
+            <button class="btn-small" onclick="cycleViewModeQuick()" id="quickModeBtn">Поворот: К ходящему</button>
+            <button class="btn-small" onclick="openSetup()">Меню / Фигуры</button>
+            <button class="btn-small" onclick="restartMatch()">Заново</button>
+            <button class="btn-small" onclick="toggleFullScreen()" id="fsBtn">На весь экран</button>
+        </div>
+    </header>
+
+    <!-- ИГРОВАЯ ЗОНА -->
+    <main class="game-area">
+
+        <!-- ВЕРХНЯЯ ПАНЕЛЬ ИГРОКА (ДЛЯ ИГРОКА У КАМЕРЫ ТЕЛЕФОНА) -->
+        <div id="topPlayerBar" class="captured-bar">
+            <div class="captured-left">
+                <span id="topActiveDot" class="active-dot" style="display:none;"></span>
+                <span id="topPlayerLabel" class="player-tag">Чёрные:</span>
+                <div id="topCapturedRow" class="captured-pieces-row"></div>
+            </div>
+            <div class="points-badge">
+                Счёт: <span id="topScore">0</span><span id="topAdv" class="points-adv"></span>
+            </div>
+        </div>
+
+        <!-- ДОСКА -->
+        <div class="board-frame">
+            <div id="board"></div>
+        </div>
+
+        <!-- НИЖНЯЯ ПАНЕЛЬ ИГРОКА (ДЛЯ ИГРОКА ВНИЗУ ТЕЛЕФОНА) -->
+        <div id="bottomPlayerBar" class="captured-bar">
+            <div class="captured-left">
+                <span id="bottomActiveDot" class="active-dot"></span>
+                <span id="bottomPlayerLabel" class="player-tag">Белые:</span>
+                <div id="bottomCapturedRow" class="captured-pieces-row"></div>
+            </div>
+            <div class="points-badge">
+                Счёт: <span id="bottomScore">0</span><span id="bottomAdv" class="points-adv"></span>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ОКНО ПРЕВРАЩЕНИЯ ПЕШКИ -->
+    <div id="promoModal" class="modal-overlay">
+        <div id="promoCard" class="modal-card">
+            <h3 style="font-size:17px; font-weight:800;">Превращение пешки</h3>
+            <div id="promoGrid" class="promo-grid"></div>
+        </div>
+    </div>
+
+    <!-- ОКНО ЗАВЕРШЕНИЯ ПАРТИИ -->
+    <div id="endModal" class="modal-overlay">
+        <div id="endCard" class="modal-card">
+            <h2 id="endTitle" style="font-size:22px; font-weight:800; margin-bottom:8px;">Победа!</h2>
+            <p id="endText" style="color:#4b5563; margin-bottom:18px; font-size:14px;"></p>
+            <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">
+                <button class="btn-primary" style="padding:10px 20px; font-size:14px;" onclick="restartMatch()">Новая партия</button>
+                <button class="btn-secondary" style="padding:10px 16px; font-size:14px;" onclick="openSetup()">Настройки</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* =========================================================
+           12 ТЕМ ДОСОК (КАРТ)
+           ========================================================= */
+        const BOARD_THEMES = [
+            { id: 'wood', name: 'Классическое дерево', light: '#f0d9b5', dark: '#b58863', border: '#5c3a21', inner: '#3d2514' },
+            { id: 'emerald', name: 'Изумрудный турнир', light: '#eeeed2', dark: '#769656', border: '#3b4d2b', inner: '#26331b' },
+            { id: 'ocean', name: 'Синий океан', light: '#dee3e6', dark: '#5b8baf', border: '#2c485e', inner: '#1c2f3e' },
+            { id: 'marble', name: 'Мраморный дворец', light: '#f3f4f6', dark: '#9ca3af', border: '#374151', inner: '#1f2937' },
+            { id: 'mahogany', name: 'Красное дерево', light: '#f5dec9', dark: '#a84232', border: '#571b12', inner: '#38100a' },
+            { id: 'onyx', name: 'Тёмный оникс', light: '#cbd5e1', dark: '#475569', border: '#0f172a', inner: '#020617' },
+            { id: 'royal', name: 'Аметист', light: '#efe6f7', dark: '#7e57c2', border: '#3f256b', inner: '#271545' },
+            { id: 'sand', name: 'Песчаная дюна', light: '#faf0d7', dark: '#c8a26d', border: '#785a32', inner: '#523c1f' },
+            { id: 'cyber', name: 'Киберпанк Неон', light: '#2dd4bf', dark: '#1e1b4b', border: '#0f172a', inner: '#ec4899' },
+            { id: 'sakura', name: 'Сакура', light: '#ffe4e6', dark: '#db2777', border: '#831843', inner: '#500724' },
+            { id: 'arctic', name: 'Арктический лёд', light: '#f0f9ff', dark: '#38bdf8', border: '#0369a1', inner: '#0c4a6e' },
+            { id: 'walnut', name: 'Тёмный орех и золото', light: '#fef3c7', dark: '#78350f', border: '#451a03', inner: '#d97706' }
+        ];
+
+        /* =========================================================
+           8 НАБОРОВ ШАХМАТНЫХ ФИГУР И 6 НАБОРОВ ШАШЕК
+           ========================================================= */
+        const CHESS_PIECE_SETS = [
+            { id: 'classic', name: 'Классика' },
+            { id: 'neo', name: 'Нео-Турнир' },
+            { id: 'imperial', name: 'Император' },
+            { id: 'modern', name: 'Модерн' },
+            { id: 'cyber', name: 'Кибер-Неон' },
+            { id: 'viking', name: 'Руны Севера' },
+            { id: 'crystal', name: 'Кристалл' },
+            { id: 'disc', name: 'Шайбы (2D)' }
+        ];
+
+        const CHECKERS_PIECE_SETS = [
+            { id: 'ch_classic', name: 'Классика с кольцами' },
+            { id: 'ch_royal', name: 'Золотая Корона' },
+            { id: 'ch_ruby', name: 'Рубин и Сапфир' },
+            { id: 'ch_neon', name: 'Неоновый диск' },
+            { id: 'ch_wood', name: 'Резное дерево' },
+            { id: 'ch_star', name: 'Звёздный орден' }
+        ];
+
+        /* =========================================================
+           ГЕНЕРАТОР SVG ШАХМАТНЫХ ФИГУР (8 СТИЛЕЙ)
+           ========================================================= */
+        function getChessPieceSVG(type, color, setStyle = currentChessPieceSet) {
+            const isW = color === 'w';
+
+            // 1. КЛАССИКА
+            if (setStyle === 'classic') {
+                const fill = isW ? '#ffffff' : '#1f1f1f';
+                const stroke = '#141414';
+                const inner = isW ? '#141414' : '#e5e5e5';
+                const shapes = {
+                    p: `<path d="M 22.5,9 C 19.5,9 17,11.5 17,14.5 C 17,16.8 18.4,18.7 20.4,19.5 C 17.5,21.2 15.5,24.3 15.5,28 C 15.5,30 16.5,31.8 18,33 C 14,34.5 11,38 11,42 L 34,42 C 34,38 31,34.5 27,33 C 28.5,31.8 29.5,30 29.5,28 C 29.5,24.3 27.5,21.2 24.6,19.5 C 26.6,18.7 28,16.8 28,14.5 C 28,11.5 25.5,9 22.5,9 z" fill="${fill}" stroke="${stroke}" stroke-width="2" stroke-linecap="round"/>`,
+                    r: `<g fill="${fill}" stroke="${stroke}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M 9,39 L 36,39 L 36,36 L 9,36 L 9,39 z"/><path d="M 12,36 L 12,32 L 33,32 L 33,36 L 12,36 z"/><path d="M 11,14 L 11,9 L 15,9 L 15,11 L 20,11 L 20,9 L 25,9 L 25,11 L 30,11 L 30,9 L 34,9 L 34,14"/><path d="M 34,14 L 31,17 L 14,17 L 11,14"/><path d="M 31,17 L 31,29.5 L 14,29.5 L 14,17"/><path d="M 31,29.5 L 32.5,32 L 12.5,32 L 14,29.5"/>
+                        </g>`,
+                    n: `<g fill="none" stroke="${stroke}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M 22,10 C 32.5,11 38.5,18 38,39 L 15,39 C 15,30 25,32.5 23,18" fill="${fill}"/><path d="M 24,18 C 24.38,20.91 18.45,25.37 16,27 C 13,29 13.18,31.34 11,31 C 9.958,30.06 12.41,27.96 11,28 C 10,28 11.19,29.23 10,30 C 9,30 5.997,31 6,26 C 6,24 12,14 12,14 C 12,14 13.89,12.1 14,10.5 C 13.27,9.506 13.5,8.5 13.5,7.5 C 14.5,6.5 16.5,10 16.5,10 L 18.5,10 C 18.5,10 19.28,8.008 21,7 C 22,7 22,10 22,10" fill="${fill}"/><circle cx="15.5" cy="14.5" r="1.3" fill="${inner}" stroke="none"/>
+                        </g>`,
+                    b: `<g fill="none" stroke="${stroke}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <g fill="${fill}"><path d="M 9,36 C 12.39,35.03 19.11,36.43 22.5,34 C 25.89,36.43 32.61,35.03 36,36 C 36,36 37.65,36.54 39,38 C 38.32,38.97 37.35,38.99 36,38.5 C 32.61,37.53 25.89,38.96 22.5,37.5 C 19.11,38.96 12.39,37.53 9,38.5 C 7.646,38.99 6.677,38.97 6,38 C 7.354,36.06 9,36 9,36 z"/><path d="M 15,32 C 17.5,34.5 27.5,34.5 30,32 C 30.5,30.5 30,30 30,30 C 30,27.5 27.5,26 27.5,26 C 33,24.5 33.5,14.5 22.5,10.5 C 11.5,14.5 12,24.5 17.5,26 C 17.5,26 15,27.5 15,30 C 15,30 14.5,30.5 15,32 z"/><circle cx="22.5" cy="8" r="2.5"/></g><path d="M 17.5,26 L 27.5,26 M 15,30 L 30,30 M 22.5,15.5 L 22.5,20.5 M 20,18 L 25,18" stroke="${inner}" stroke-width="1.6"/>
+                        </g>`,
+                    q: `<g fill="${fill}" stroke="${stroke}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M 9,26 C 17.5,24.5 30,24.5 36,26 L 38.5,13.5 L 31,25 L 30.7,10.9 L 25.5,24.5 L 22.5,10 L 19.5,24.5 L 14.3,10.9 L 14,25 L 6.5,13.5 L 9,26 z"/><path d="M 9,26 C 9,28 10.5,28 11.5,30 C 12.5,31.5 12.5,31 12,33.5 C 10.5,34.5 11,36 11,36 C 9.5,37.5 11,38.5 11,38.5 C 17.5,39.5 27.5,39.5 34,38.5 C 34,38.5 35.5,37.5 34,36 C 34,36 34.5,34.5 33,33.5 C 32.5,31 32.5,31.5 33.5,30 C 34.5,28 36,28 36,26 C 27.5,24.5 17.5,24.5 9,26 z"/><circle cx="6" cy="12" r="2"/><circle cx="14" cy="9" r="2"/><circle cx="22.5" cy="8" r="2"/><circle cx="31" cy="9" r="2"/><circle cx="39" cy="12" r="2"/><path d="M 12,33.5 C 18,32.5 27,32.5 33,33.5" fill="none" stroke="${inner}" stroke-width="1.5"/>
+                        </g>`,
+                    k: `<g fill="none" stroke="${stroke}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M 22.5,11.63 L 22.5,6" stroke-width="2.2"/><path d="M 20,8 L 25,8" stroke-width="2.2"/><path d="M 22.5,25 C 22.5,25 27,17.5 25.5,14.5 C 25.5,14.5 24.5,12 22.5,12 C 20.5,12 19.5,14.5 19.5,14.5 C 18,17.5 22.5,25 22.5,25" fill="${fill}"/><path d="M 11.5,37 C 17,40.5 27,40.5 32.5,37 L 32.5,30 C 32.5,30 41.5,25.5 38.5,19.5 C 34.5,13 25,16 22.5,23.5 L 22.5,27 L 22.5,23.5 C 19,16 9.5,13 6.5,19.5 C 3.5,25.5 11.5,29.5 11.5,29.5 L 11.5,37 z" fill="${fill}"/><path d="M 11.5,30 C 17,27 27,27 32.5,30" stroke="${inner}" stroke-width="1.5"/><path d="M 11.5,33.5 C 17,30.5 27,30.5 32.5,33.5" stroke="${inner}" stroke-width="1.5"/>
+                        </g>`
+                };
+                return `<svg viewBox="0 0 45 45">${shapes[type]}</svg>`;
+            }
+
+            // 2. НЕО-ТУРНИР
+            if (setStyle === 'neo') {
+                const fill = isW ? '#f8fafc' : '#262626';
+                const shade = isW ? '#cbd5e1' : '#404040';
+                const stroke = '#0f172a';
+                const shapes = {
+                    p: `<g stroke="${stroke}" stroke-width="2.6" fill="${fill}" stroke-linejoin="round">
+                            <path d="M10 40 H35 L32 34 H13 Z"/><path d="M15 34 C15 26 18 23 22.5 21 C27 23 30 26 30 34 Z"/><circle cx="22.5" cy="14" r="6.5"/><path d="M19 11 A4 4 0 0 1 25 11" stroke="${shade}" stroke-width="2" fill="none"/>
+                        </g>`,
+                    r: `<g stroke="${stroke}" stroke-width="2.6" fill="${fill}" stroke-linejoin="round">
+                            <rect x="9" y="36" width="27" height="5" rx="1"/><path d="M13 36 L15 18 H30 L32 36 Z"/><path d="M11 18 H34 V10 H30 V13 H25 V10 H20 V13 H15 V10 H11 Z"/>
+                        </g>`,
+                    n: `<g stroke="${stroke}" stroke-width="2.6" fill="${fill}" stroke-linejoin="round">
+                            <rect x="9" y="36" width="27" height="5" rx="1"/><path d="M14 36 C14 27 22 25 21 19 C17 21 13 24 9 22 C7 19 11 12 16 9 L19 6 L22 9 C31 10 36 19 34 36 Z"/><circle cx="16" cy="14" r="1.5" fill="${stroke}"/>
+                        </g>`,
+                    b: `<g stroke="${stroke}" stroke-width="2.6" fill="${fill}" stroke-linejoin="round">
+                            <rect x="9" y="36" width="27" height="5" rx="1"/><path d="M13 36 C11 23 15 13 22.5 10 C30 13 34 23 32 36 Z"/><circle cx="22.5" cy="7" r="2.5"/><path d="M19 19 H26 M22.5 15.5 V22.5" stroke="${shade}" stroke-width="2.4" stroke-linecap="round"/>
+                        </g>`,
+                    q: `<g stroke="${stroke}" stroke-width="2.6" fill="${fill}" stroke-linejoin="round">
+                            <rect x="9" y="36" width="27" height="5" rx="1"/><path d="M11 36 L7 16 L15 24 L22.5 13 L30 24 L38 16 L34 36 Z"/><circle cx="7" cy="13" r="2"/><circle cx="22.5" cy="10" r="2"/><circle cx="38" cy="13" r="2"/>
+                        </g>`,
+                    k: `<g stroke="${stroke}" stroke-width="2.6" fill="${fill}" stroke-linejoin="round">
+                            <path d="M22.5 4 V11 M19 7.5 H26" stroke-linecap="round"/><rect x="9" y="36" width="27" height="5" rx="1"/><path d="M12 36 L9 20 C9 14 16 14 22.5 21 C29 14 36 14 36 20 L33 36 Z"/>
+                        </g>`
+                };
+                return `<svg viewBox="0 0 45 45">${shapes[type]}</svg>`;
+            }
+
+            // 3. ИМПЕРАТОР
+            if (setStyle === 'imperial') {
+                const fill = isW ? '#fffbeb' : '#18181b';
+                const accent = isW ? '#d97706' : '#f59e0b';
+                const stroke = isW ? '#78350f' : '#fbbf24';
+                const shapes = {
+                    p: `<g fill="${fill}" stroke="${stroke}" stroke-width="2.2">
+                            <path d="M10 40 H35 L33 35 H12 Z"/><path d="M15 35 L18 21 H27 L30 35 Z"/><circle cx="22.5" cy="14" r="6"/><circle cx="22.5" cy="14" r="2.2" fill="${accent}" stroke="none"/>
+                        </g>`,
+                    r: `<g fill="${fill}" stroke="${stroke}" stroke-width="2.2">
+                            <path d="M9 40 H36 L34 35 H11 Z"/><rect x="14" y="18" width="17" height="17"/><path d="M11 18 L11 10 H16 V13 H20 V10 H25 V13 H29 V10 H34 V18 Z"/><line x1="18" y1="22" x2="18" y2="31" stroke="${accent}" stroke-width="2"/><line x1="27" y1="22" x2="27" y2="31" stroke="${accent}" stroke-width="2"/>
+                        </g>`,
+                    n: `<g fill="${fill}" stroke="${stroke}" stroke-width="2.2" stroke-linejoin="round">
+                            <path d="M10 40 H35 L33 35 H12 Z"/><path d="M14 35 C15 26 22 25 22 18 L13 22 L10 18 L15 9 L20 7 L24 10 C32 11 36 20 33 35 Z"/><circle cx="17" cy="13" r="1.6" fill="${accent}" stroke="none"/>
+                        </g>`,
+                    b: `<g fill="${fill}" stroke="${stroke}" stroke-width="2.2">
+                            <path d="M10 40 H35 L33 35 H12 Z"/><path d="M14 35 C12 22 16 13 22.5 10 C29 13 33 22 31 35 Z"/><polygon points="22.5,4 25,9 20,9" fill="${accent}"/><path d="M18 22 H27 M22.5 17 V27" stroke="${accent}" stroke-width="2.2"/>
+                        </g>`,
+                    q: `<g fill="${fill}" stroke="${stroke}" stroke-width="2.2" stroke-linejoin="round">
+                            <path d="M9 40 H36 L34 35 H11 Z"/><path d="M12 35 L8 15 L16 24 L22.5 12 L29 24 L37 15 L33 35 Z"/><circle cx="8" cy="12" r="2.2" fill="${accent}"/><circle cx="22.5" cy="9" r="2.5" fill="${accent}"/><circle cx="37" cy="12" r="2.2" fill="${accent}"/>
+                        </g>`,
+                    k: `<g fill="${fill}" stroke="${stroke}" stroke-width="2.2" stroke-linejoin="round">
+                            <path d="M22.5 3 V11 M18.5 7 H26.5" stroke="${accent}" stroke-width="2.8"/><path d="M9 40 H36 L34 35 H11 Z"/><path d="M12 35 L10 18 L17 23 L22.5 14 L28 23 L35 18 L33 35 Z"/><circle cx="22.5" cy="28" r="2.5" fill="${accent}"/>
+                        </g>`
+                };
+                return `<svg viewBox="0 0 45 45">${shapes[type]}</svg>`;
+            }
+
+            // 4. МОДЕРН
+            if (setStyle === 'modern') {
+                const fill = isW ? '#ffffff' : '#1e293b';
+                const stroke = isW ? '#0f172a' : '#f8fafc';
+                const core = isW ? '#0f172a' : '#38bdf8';
+                const shapes = {
+                    p: `<g fill="${fill}" stroke="${stroke}" stroke-width="2.4" stroke-linejoin="round">
+                            <polygon points="12,39 33,39 28,22 17,22"/><circle cx="22.5" cy="14" r="6"/>
+                        </g>`,
+                    r: `<g fill="${fill}" stroke="${stroke}" stroke-width="2.4" stroke-linejoin="round">
+                            <rect x="11" y="34" width="23" height="5"/><rect x="14" y="16" width="17" height="18"/><path d="M11 10 H17 V16 H28 V10 H34 V18 H11 Z"/>
+                        </g>`,
+                    n: `<g fill="${fill}" stroke="${stroke}" stroke-width="2.4" stroke-linejoin="round">
+                            <polygon points="11,39 34,39 32,14 21,8 10,18 18,21 13,39"/><circle cx="19" cy="14" r="1.8" fill="${core}" stroke="none"/>
+                        </g>`,
+                    b: `<g fill="${fill}" stroke="${stroke}" stroke-width="2.4" stroke-linejoin="round">
+                            <polygon points="11,39 34,39 29,15 22.5,8 16,15"/><circle cx="22.5" cy="23" r="3" fill="${core}" stroke="none"/>
+                        </g>`,
+                    q: `<g fill="${fill}" stroke="${stroke}" stroke-width="2.4" stroke-linejoin="round">
+                            <polygon points="10,39 35,39 38,14 28,24 22.5,10 17,24 7,14"/><circle cx="22.5" cy="31" r="2.5" fill="${core}" stroke="none"/>
+                        </g>`,
+                    k: `<g fill="${fill}" stroke="${stroke}" stroke-width="2.4" stroke-linejoin="round">
+                            <path d="M22.5 4 V12 M18.5 8 H26.5" stroke="${core}" stroke-width="2.8"/><polygon points="10,39 35,39 35,18 22.5,12 10,18"/><rect x="19.5" y="23" width="6" height="6" fill="${core}" stroke="none"/>
+                        </g>`
+                };
+                return `<svg viewBox="0 0 45 45">${shapes[type]}</svg>`;
+            }
+
+            // 5. КИБЕР-НЕОН
+            if (setStyle === 'cyber') {
+                const fill = isW ? '#0f172a' : '#18181b';
+                const neon = isW ? '#22d3ee' : '#f43f5e';
+                const glow = isW ? '#cffafe' : '#fecdd3';
+                const shapes = {
+                    p: `<g fill="${fill}" stroke="${neon}" stroke-width="2.4" stroke-linejoin="round">
+                            <polygon points="10,40 35,40 31,34 14,34"/><polygon points="15,34 20,20 25,20 30,34"/><polygon points="22.5,7 29,14 22.5,21 16,14"/><circle cx="22.5" cy="14" r="2" fill="${glow}" stroke="none"/>
+                        </g>`,
+                    r: `<g fill="${fill}" stroke="${neon}" stroke-width="2.4" stroke-linejoin="round">
+                            <polygon points="9,40 36,40 34,35 11,35"/><rect x="14" y="17" width="17" height="18"/><path d="M10 17 L12 9 H17 V13 H28 V9 H33 L35 17 Z"/><line x1="22.5" y1="20" x2="22.5" y2="32" stroke="${glow}" stroke-width="2"/>
+                        </g>`,
+                    n: `<g fill="${fill}" stroke="${neon}" stroke-width="2.4" stroke-linejoin="round">
+                            <polygon points="10,40 35,40 33,16 22,8 10,17 19,20 13,40"/><circle cx="18" cy="14" r="2" fill="${glow}" stroke="none"/>
+                        </g>`,
+                    b: `<g fill="${fill}" stroke="${neon}" stroke-width="2.4" stroke-linejoin="round">
+                            <polygon points="10,40 35,40 30,16 22.5,7 15,16"/><path d="M22.5 14 V28 M17 21 H28" stroke="${glow}" stroke-width="2"/>
+                        </g>`,
+                    q: `<g fill="${fill}" stroke="${neon}" stroke-width="2.4" stroke-linejoin="round">
+                            <polygon points="9,40 36,40 39,14 29,25 22.5,9 16,25 6,14"/><circle cx="22.5" cy="31" r="2.5" fill="${glow}" stroke="none"/>
+                        </g>`,
+                    k: `<g fill="${fill}" stroke="${neon}" stroke-width="2.4" stroke-linejoin="round">
+                            <path d="M22.5 3 V11 M18 7 H27" stroke="${glow}" stroke-width="2.6"/><polygon points="9,40 36,40 36,17 22.5,11 9,17"/><polygon points="22.5,18 27,26 22.5,34 18,26" fill="${neon}"/>
+                        </g>`
+                };
+                return `<svg viewBox="0 0 45 45">${shapes[type]}</svg>`;
+            }
+
+            // 6. РУНЫ СЕВЕРА (Викинги)
+            if (setStyle === 'viking') {
+                const fill = isW ? '#fef3c7' : '#27272a';
+                const stroke = isW ? '#451a03' : '#f59e0b';
+                const rune = isW ? '#92400e' : '#fde68a';
+                const shapes = {
+                    p: `<g fill="${fill}" stroke="${stroke}" stroke-width="2.3" stroke-linejoin="round">
+                            <path d="M11 40 H34 L31 24 L22.5 18 L14 24 Z"/><circle cx="22.5" cy="13" r="5.5"/><path d="M22.5 23 V35 M19 28 L22.5 24 L26 28" stroke="${rune}" stroke-width="2" fill="none"/>
+                        </g>`,
+                    r: `<g fill="${fill}" stroke="${stroke}" stroke-width="2.3" stroke-linejoin="round">
+                            <rect x="10" y="35" width="25" height="5"/><path d="M13 35 L14 15 H31 L32 35 Z"/><path d="M10 15 L12 9 H18 L19 13 H26 L27 9 H33 L35 15 Z"/><path d="M18 21 L27 30 M27 21 L18 30" stroke="${rune}" stroke-width="2"/>
+                        </g>`,
+                    n: `<g fill="${fill}" stroke="${stroke}" stroke-width="2.3" stroke-linejoin="round">
+                            <path d="M11 40 H34 L33 17 L24 8 L18 11 L11 16 L12 22 L20 20 L14 40 Z"/><circle cx="17" cy="14" r="1.6" fill="${rune}"/>
+                        </g>`,
+                    b: `<g fill="${fill}" stroke="${stroke}" stroke-width="2.3" stroke-linejoin="round">
+                            <path d="M11 40 H34 L31 19 L22.5 8 L14 19 Z"/><path d="M22.5 14 V33 M18 20 L22.5 16 L27 20" stroke="${rune}" stroke-width="2" fill="none"/>
+                        </g>`,
+                    q: `<g fill="${fill}" stroke="${stroke}" stroke-width="2.3" stroke-linejoin="round">
+                            <path d="M10 40 H35 L38 15 L28 24 L22.5 9 L17 24 L7 15 Z"/><polygon points="22.5,24 26,30 22.5,36 19,30" fill="${rune}" stroke="none"/>
+                        </g>`,
+                    k: `<g fill="${fill}" stroke="${stroke}" stroke-width="2.3" stroke-linejoin="round">
+                            <path d="M22.5 3 V11 M18 7 H27" stroke="${stroke}" stroke-width="2.8"/><path d="M9 40 H36 L35 16 L28 22 L22.5 12 L17 22 L10 16 Z"/><path d="M22.5 20 V35 M18 25 L27 31" stroke="${rune}" stroke-width="2.2"/>
+                        </g>`
+                };
+                return `<svg viewBox="0 0 45 45">${shapes[type]}</svg>`;
+            }
+
+            // 7. КРИСТАЛЛ
+            if (setStyle === 'crystal') {
+                const fill = isW ? '#e0f2fe' : '#311042';
+                const facet = isW ? '#7dd3fc' : '#86198f';
+                const stroke = isW ? '#0369a1' : '#f0abfc';
+                const shapes = {
+                    p: `<g stroke="${stroke}" stroke-width="2" stroke-linejoin="round">
+                            <polygon points="11,40 34,40 29,23 22.5,9 16,23" fill="${fill}"/><polygon points="22.5,9 29,23 22.5,40" fill="${facet}" opacity="0.55"/>
+                        </g>`,
+                    r: `<g stroke="${stroke}" stroke-width="2" stroke-linejoin="round">
+                            <polygon points="10,40 35,40 32,14 13,14" fill="${fill}"/><polygon points="22.5,14 32,14 35,40 22.5,40" fill="${facet}" opacity="0.55"/><polygon points="11,14 15,8 22.5,12 30,8 34,14" fill="${fill}"/>
+                        </g>`,
+                    n: `<g stroke="${stroke}" stroke-width="2" stroke-linejoin="round">
+                            <polygon points="11,40 34,40 33,16 21,7 10,18 19,21" fill="${fill}"/><polygon points="21,7 33,16 34,40 22,26" fill="${facet}" opacity="0.55"/>
+                        </g>`,
+                    b: `<g stroke="${stroke}" stroke-width="2" stroke-linejoin="round">
+                            <polygon points="11,40 34,40 31,18 22.5,6 14,18" fill="${fill}"/><polygon points="22.5,6 31,18 34,40 22.5,40" fill="${facet}" opacity="0.55"/>
+                        </g>`,
+                    q: `<g stroke="${stroke}" stroke-width="2" stroke-linejoin="round">
+                            <polygon points="9,40 36,40 39,14 28,24 22.5,7 17,24 6,14" fill="${fill}"/><polygon points="22.5,7 28,24 39,14 36,40 22.5,40" fill="${facet}" opacity="0.55"/>
+                        </g>`,
+                    k: `<g stroke="${stroke}" stroke-width="2" stroke-linejoin="round">
+                            <path d="M22.5 3 V10 M19 6.5 H26" stroke-width="2.5"/><polygon points="9,40 36,40 36,16 22.5,10 9,16" fill="${fill}"/><polygon points="22.5,10 36,16 36,40 22.5,40" fill="${facet}" opacity="0.55"/>
+                        </g>`
+                };
+                return `<svg viewBox="0 0 45 45">${shapes[type]}</svg>`;
+            }
+
+            // 8. ШАЙБЫ 2D
+            const bg = isW ? '#ffffff' : '#18181b';
+            const ring = isW ? '#1e293b' : '#f4f4f5';
+            const fg = isW ? '#0f172a' : '#fafafa';
+            const innerSym = {
+                p: `<circle cx="22.5" cy="17" r="4.2" fill="${fg}"/><path d="M16 30 C16 24 29 24 29 30 Z" fill="${fg}"/>`,
+                r: `<path d="M15 15 H18 V18 H21 V15 H24 V18 H27 V15 H30 V22 H28 V30 H17 V22 H15 Z" fill="${fg}"/>`,
+                n: `<path d="M16 30 L18 21 L14 20 L18 13 L23 12 C28 13 30 19 29 30 Z" fill="${fg}"/>`,
+                b: `<path d="M22.5 12 C27 16 28 23 27 30 H18 C17 23 18 16 22.5 12 Z" fill="${fg}"/><circle cx="22.5" cy="10" r="1.8" fill="${fg}"/>`,
+                q: `<path d="M14 29 L12 17 L18 22 L22.5 14 L27 22 L33 17 L31 29 Z" fill="${fg}"/>`,
+                k: `<path d="M22.5 10 V16 M19.5 13 H25.5" stroke="${fg}" stroke-width="2.5"/><path d="M15 29 L14 19 L22.5 16 L31 19 L30 29 Z" fill="${fg}"/>`
+            };
+            return `<svg viewBox="0 0 45 45">
+                <circle cx="22.5" cy="22.5" r="18.5" fill="${bg}" stroke="#0f172a" stroke-width="2.4"/>
+                <circle cx="22.5" cy="22.5" r="15" fill="none" stroke="${ring}" stroke-width="1.4" stroke-dasharray="3,2"/>
+                ${innerSym[type]}
+            </svg>`;
+        }
+
+        /* =========================================================
+           ГЕНЕРАТОР SVG ФИГУР ШАШЕК (6 СТИЛЕЙ, С ОРИЕНТАЦИЕЙ ВЕРХА)
+           ========================================================= */
+        function getCheckerSVG(isKing, color, setStyle = currentCheckersPieceSet) {
+            const isW = color === 'w';
+
+            // Корона или направленный шеврон, чтобы игрок видел, что шашка повёрнута к нему лицом
+            const kingCrown = (fillCol, strokeCol) => `
+                <path d="M13 28 L11 17 L17.5 22 L22.5 14 L27.5 22 L34 17 L32 28 Z" fill="${fillCol}" stroke="${strokeCol}" stroke-width="1.6" stroke-linejoin="round"/>
+                <circle cx="11" cy="14.5" r="1.6" fill="${fillCol}"/>
+                <circle cx="22.5" cy="11.5" r="1.8" fill="${fillCol}"/>
+                <circle cx="34" cy="14.5" r="1.6" fill="${fillCol}"/>
+            `;
+
+            const frontEmblem = (col) => `
+                <path d="M17.5 25 L22.5 18 L27.5 25" fill="none" stroke="${col}" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="22.5" cy="26.5" r="1.6" fill="${col}"/>
+            `;
+
+            if (setStyle === 'ch_classic') {
+                const bg = isW ? '#f8fafc' : '#1e293b';
+                const rim = isW ? '#cbd5e1' : '#334155';
+                const stroke = isW ? '#0f172a' : '#090d16';
+                const accent = isW ? '#334155' : '#e2e8f0';
+                return `<svg viewBox="0 0 45 45">
+                    <circle cx="22.5" cy="23.5" r="18" fill="${stroke}" opacity="0.28"/>
+                    <circle cx="22.5" cy="22.5" r="18" fill="${bg}" stroke="${stroke}" stroke-width="2.4"/>
+                    <circle cx="22.5" cy="22.5" r="14" fill="${rim}" stroke="${accent}" stroke-width="1.5"/>
+                    <circle cx="22.5" cy="22.5" r="10" fill="${bg}" stroke="${accent}" stroke-width="1.2"/>
+                    ${isKing ? kingCrown('#f59e0b', '#78350f') : frontEmblem(accent)}
+                </svg>`;
+            }
+
+            if (setStyle === 'ch_royal') {
+                const bg = isW ? '#fffbeb' : '#18181b';
+                const stroke = isW ? '#b45309' : '#f59e0b';
+                const inner = isW ? '#d97706' : '#fbbf24';
+                return `<svg viewBox="0 0 45 45">
+                    <circle cx="22.5" cy="22.5" r="18.2" fill="${bg}" stroke="${stroke}" stroke-width="2.6"/>
+                    <circle cx="22.5" cy="22.5" r="14.5" fill="none" stroke="${inner}" stroke-width="1.4" stroke-dasharray="4,2"/>
+                    ${isKing ? kingCrown(inner, stroke) : `<polygon points="22.5,14 28,26 22.5,23 17,26" fill="${inner}"/>`}
+                </svg>`;
+            }
+
+            if (setStyle === 'ch_ruby') {
+                const bg = isW ? '#eff6ff' : '#450a0a';
+                const gem = isW ? '#3b82f6' : '#ef4444';
+                const stroke = isW ? '#1d4ed8' : '#f87171';
+                return `<svg viewBox="0 0 45 45">
+                    <polygon points="22.5,4 36,10 41,22.5 36,35 22.5,41 9,35 4,22.5 9,10" fill="${bg}" stroke="${stroke}" stroke-width="2.4"/>
+                    <circle cx="22.5" cy="22.5" r="12.5" fill="${gem}" opacity="0.25" stroke="${stroke}" stroke-width="1.5"/>
+                    ${isKing ? kingCrown('#fde047', '#854d0e') : `<polygon points="22.5,13 29,27 22.5,24 16,27" fill="${gem}"/>`}
+                </svg>`;
+            }
+
+            if (setStyle === 'ch_neon') {
+                const bg = '#0f172a';
+                const neon = isW ? '#22d3ee' : '#f43f5e';
+                return `<svg viewBox="0 0 45 45">
+                    <circle cx="22.5" cy="22.5" r="18" fill="${bg}" stroke="${neon}" stroke-width="2.6"/>
+                    <circle cx="22.5" cy="22.5" r="13" fill="none" stroke="${neon}" stroke-width="1.4" opacity="0.6"/>
+                    ${isKing ? kingCrown(neon, '#ffffff') : `<path d="M16 26 L22.5 15 L29 26 Z" fill="none" stroke="${neon}" stroke-width="2.2"/>`}
+                </svg>`;
+            }
+
+            if (setStyle === 'ch_wood') {
+                const bg = isW ? '#fde68a' : '#451a03';
+                const ring = isW ? '#b45309' : '#d97706';
+                const stroke = isW ? '#78350f' : '#270e02';
+                return `<svg viewBox="0 0 45 45">
+                    <circle cx="22.5" cy="22.5" r="18" fill="${bg}" stroke="${stroke}" stroke-width="2.6"/>
+                    <circle cx="22.5" cy="22.5" r="13.5" fill="none" stroke="${ring}" stroke-width="2"/>
+                    <circle cx="22.5" cy="22.5" r="8.5" fill="none" stroke="${ring}" stroke-width="1.3"/>
+                    ${isKing ? kingCrown('#f59e0b', stroke) : frontEmblem(ring)}
+                </svg>`;
+            }
+
+            // Звёздный орден
+            const bg = isW ? '#ffffff' : '#18181b';
+            const fg = isW ? '#0f172a' : '#f4f4f5';
+            return `<svg viewBox="0 0 45 45">
+                <circle cx="22.5" cy="22.5" r="18" fill="${bg}" stroke="${fg}" stroke-width="2.5"/>
+                <circle cx="22.5" cy="22.5" r="14" fill="none" stroke="${fg}" stroke-width="1.2" stroke-dasharray="2,2"/>
+                ${isKing
+                    ? kingCrown('#eab308', fg)
+                    : `<polygon points="22.5,12 25.2,19 32.5,19.5 27,24.2 28.8,31.5 22.5,27.5 16.2,31.5 18,24.2 12.5,19.5 19.8,19" fill="${fg}"/>`
+                }
+            </svg>`;
+        }
+
+        /* =========================================================
+           ГЛОБАЛЬНОЕ СОСТОЯНИЕ И НАСТРОЙКИ
+           ========================================================= */
+        const chessGame = new Chess();
+        const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+        const ranks = ['8', '7', '6', '5', '4', '3', '2', '1'];
+        const piecePoints = { p: 1, n: 3, b: 3, r: 5, q: 9 };
+
+        let gameType = 'chess'; // 'chess' | 'checkers'
+        let checkersRule = 'russian'; // 'russian' | 'english' | 'giveaway'
+
+        let currentBoardTheme = 'wood';
+        let currentChessPieceSet = 'classic';
+        let currentCheckersPieceSet = 'ch_classic';
+
+        /*
+           РЕЖИМЫ ПОВОРОТА:
+           - 'faceTurn' (По умолчанию): Доска стационарна (Белые внизу телефона, Чёрные вверху у камеры).
+             Когда ходят Белые — все фигуры смотрят вниз (к нижнему игроку).
+             Когда ходят Чёрные — все фигуры поворачиваются на 180° вверх (к игроку у камеры телефона)!
+           - 'splitFace': Белые фигуры всегда смотрят вниз, Чёрные всегда смотрят вверх к камере.
+           - 'boardFlip': Вся сетка доски переворачивается после каждого хода.
+        */
+        let viewMode = 'faceTurn';
+
+        let selectedSq = null;
+        let validMoves = [];
+        let lastMove = null;
+        let wins = { w: 0, b: 0 };
+
+        /* =========================================================
+           ДВИЖОК ШАШЕК (РУССКИЕ, АНГЛИЙСКИЕ, ПОДДАВКИ)
+           ========================================================= */
+        let checkersBoard = []; // 8x8: null или { color: 'w'|'b', king: boolean }
+        let checkersTurn = 'w';
+        let checkersSelected = null; // { r, c }
+        let checkersValidMoves = []; // [{ fromR, fromC, toR, toC, captured: {r,c}|null, promote: boolean }]
+        let checkersChainPiece = null; // { r, c } если идёт серия взятий одной шашкой
+        let checkersCapturedCount = { w: 0, b: 0 }; // сколько фигур съели Белые (w) и Чёрные (b)
+        let checkersGameOver = false;
+        let checkersWinner = null;
+
+        function initCheckersGame() {
+            checkersBoard = Array.from({ length: 8 }, () => Array(8).fill(null));
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    if ((r + c) % 2 === 1) {
+                        if (r < 3) checkersBoard[r][c] = { color: 'b', king: false };
+                        else if (r > 4) checkersBoard[r][c] = { color: 'w', king: false };
+                    }
+                }
+            }
+            checkersTurn = 'w';
+            checkersSelected = null;
+            checkersValidMoves = [];
+            checkersChainPiece = null;
+            checkersCapturedCount = { w: 0, b: 0 };
+            checkersGameOver = false;
+            checkersWinner = null;
+            lastMove = null;
+        }
+
+        function insideBoard(r, c) {
+            return r >= 0 && r < 8 && c >= 0 && c < 8;
+        }
+
+        // Получение всех взятий для конкретной шашки (r, c)
+        function getCheckersCapturesForPiece(r, c, boardState) {
+            const p = boardState[r][c];
+            if (!p) return [];
+            const captures = [];
+            const dirs = [[-1, -1], [-1, 1], [1, -1], [1, 1]];
+
+            if (!p.king) {
+                for (const [dr, dc] of dirs) {
+                    // В английских шашках простые бьют только вперёд
+                    if (checkersRule === 'english') {
+                        if (p.color === 'w' && dr > 0) continue;
+                        if (p.color === 'b' && dr < 0) continue;
+                    }
+                    const midR = r + dr, midC = c + dc;
+                    const toR = r + dr * 2, toC = c + dc * 2;
+                    if (insideBoard(toR, toC)) {
+                        const midP = boardState[midR][midC];
+                        if (midP && midP.color !== p.color && !boardState[toR][toC]) {
+                            const promote = (p.color === 'w' && toR === 0) || (p.color === 'b' && toR === 7);
+                            captures.push({
+                                fromR: r, fromC: c, toR, toC,
+                                captured: { r: midR, c: midC },
+                                promote
+                            });
+                        }
+                    }
+                }
+            } else {
+                // Дамка
+                if (checkersRule === 'english') {
+                    // В английских шашках дамка бьёт только через 1 клетку
+                    for (const [dr, dc] of dirs) {
+                        const midR = r + dr, midC = c + dc;
+                        const toR = r + dr * 2, toC = c + dc * 2;
+                        if (insideBoard(toR, toC)) {
+                            const midP = boardState[midR][midC];
+                            if (midP && midP.color !== p.color && !boardState[toR][toC]) {
+                                captures.push({
+                                    fromR: r, fromC: c, toR, toC,
+                                    captured: { r: midR, c: midC },
+                                    promote: false
+                                });
+                            }
+                        }
+                    }
+                } else {
+                    // Русские шашки и Поддавки: «летающая» дамка
+                    for (const [dr, dc] of dirs) {
+                        let step = 1;
+                        let enemyPos = null;
+                        while (true) {
+                            const nr = r + dr * step;
+                            const nc = c + dc * step;
+                            if (!insideBoard(nr, nc)) break;
+                            const cell = boardState[nr][nc];
+                            if (!enemyPos) {
+                                if (cell) {
+                                    if (cell.color === p.color) break;
+                                    enemyPos = { r: nr, c: nc };
+                                }
+                            } else {
+                                if (cell) break;
+                                captures.push({
+                                    fromR: r, fromC: c, toR: nr, toC: nc,
+                                    captured: enemyPos,
+                                    promote: false
+                                });
+                            }
+                            step++;
+                        }
+                    }
+                }
+            }
+            return captures;
+        }
+
+        // Обычные (тихие) ходы для шашки (r, c)
+        function getCheckersQuietMovesForPiece(r, c, boardState) {
+            const p = boardState[r][c];
+            if (!p) return [];
+            const moves = [];
+            const dirs = [[-1, -1], [-1, 1], [1, -1], [1, 1]];
+
+            if (!p.king) {
+                const forwardDr = p.color === 'w' ? -1 : 1;
+                for (const dc of [-1, 1]) {
+                    const toR = r + forwardDr;
+                    const toC = c + dc;
+                    if (insideBoard(toR, toC) && !boardState[toR][toC]) {
+                        const promote = (p.color === 'w' && toR === 0) || (p.color === 'b' && toR === 7);
+                        moves.push({ fromR: r, fromC: c, toR, toC, captured: null, promote });
+                    }
+                }
+            } else {
+                if (checkersRule === 'english') {
+                    for (const [dr, dc] of dirs) {
+                        const toR = r + dr, toC = c + dc;
+                        if (insideBoard(toR, toC) && !boardState[toR][toC]) {
+                            moves.push({ fromR: r, fromC: c, toR, toC, captured: null, promote: false });
+                        }
+                    }
+                } else {
+                    // Летающая дамка
+                    for (const [dr, dc] of dirs) {
+                        let step = 1;
+                        while (true) {
+                            const toR = r + dr * step;
+                            const toC = c + dc * step;
+                            if (!insideBoard(toR, toC) || boardState[toR][toC]) break;
+                            moves.push({ fromR: r, fromC: c, toR, toC, captured: null, promote: false });
+                            step++;
+                        }
+                    }
+                }
+            }
+            return moves;
+        }
+
+        // Все легальные ходы текущего игрока в шашках (с правилом обязательного боя)
+        function getAllCheckersLegalMoves(color) {
+            if (checkersChainPiece) {
+                return getCheckersCapturesForPiece(checkersChainPiece.r, checkersChainPiece.c, checkersBoard);
+            }
+            let allCaptures = [];
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    const p = checkersBoard[r][c];
+                    if (p && p.color === color) {
+                        const caps = getCheckersCapturesForPiece(r, c, checkersBoard);
+                        if (caps.length) allCaptures.push(...caps);
+                    }
+                }
+            }
+            if (allCaptures.length > 0) return allCaptures;
+
+            let allQuiet = [];
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    const p = checkersBoard[r][c];
+                    if (p && p.color === color) {
+                        allQuiet.push(...getCheckersQuietMovesForPiece(r, c, checkersBoard));
+                    }
+                }
+            }
+            return allQuiet;
+        }
+
+        function handleCheckersSquareClick(r, c) {
+            if (checkersGameOver) return;
+
+            const legalMoves = getAllCheckersLegalMoves(checkersTurn);
+
+            // Проверяем, кликнули ли по целевой клетке выбранной шашки
+            if (checkersSelected) {
+                const chosenMove = checkersValidMoves.find(m => m.toR === r && m.toC === c);
+                if (chosenMove) {
+                    executeCheckersMove(chosenMove);
+                    return;
+                }
+            }
+
+            // Если идёт серия взятий одной шашкой, нельзя переключиться на другую
+            if (checkersChainPiece) return;
+
+            const clickedPiece = checkersBoard[r][c];
+            if (clickedPiece && clickedPiece.color === checkersTurn) {
+                const movesForThis = legalMoves.filter(m => m.fromR === r && m.fromC === c);
+                if (movesForThis.length > 0) {
+                    checkersSelected = { r, c };
+                    checkersValidMoves = movesForThis;
+                } else {
+                    checkersSelected = null;
+                    checkersValidMoves = [];
+                }
+            } else {
+                checkersSelected = null;
+                checkersValidMoves = [];
+            }
+            renderBoard();
+        }
+
+        function executeCheckersMove(move) {
+            const piece = checkersBoard[move.fromR][move.fromC];
+            checkersBoard[move.fromR][move.fromC] = null;
+            checkersBoard[move.toR][move.toC] = piece;
+
+            let justPromoted = false;
+            if (move.promote && !piece.king) {
+                piece.king = true;
+                justPromoted = true;
+            }
+
+            lastMove = {
+                from: files[move.fromC] + ranks[move.fromR],
+                to: files[move.toC] + ranks[move.toR]
+            };
+
+            if (move.captured) {
+                checkersBoard[move.captured.r][move.captured.c] = null;
+                checkersCapturedCount[checkersTurn]++;
+
+                // В английских шашках при превращении в дамку серия взятий заканчивается,
+                // а в русских шашках превратившаяся шашка продолжает бить уже как дамка!
+                const canContinueAfterPromo = !(checkersRule === 'english' && justPromoted);
+
+                if (canContinueAfterPromo) {
+                    const nextCaptures = getCheckersCapturesForPiece(move.toR, move.toC, checkersBoard);
+                    if (nextCaptures.length > 0) {
+                        checkersChainPiece = { r: move.toR, c: move.toC };
+                        checkersSelected = { r: move.toR, c: move.toC };
+                        checkersValidMoves = nextCaptures;
+                        renderBoard();
+                        return;
+                    }
+                }
+            }
+
+            // Передача хода сопернику
+            checkersChainPiece = null;
+            checkersSelected = null;
+            checkersValidMoves = [];
+            checkersTurn = checkersTurn === 'w' ? 'b' : 'w';
+
+            // Проверка окончания игры в шашках
+            const nextMoves = getAllCheckersLegalMoves(checkersTurn);
+            if (nextMoves.length === 0) {
+                checkersGameOver = true;
+                // В поддавках побеждает тот, у кого не осталось шашек или ходов
+                if (checkersRule === 'giveaway') {
+                    checkersWinner = checkersTurn;
+                } else {
+                    checkersWinner = checkersTurn === 'w' ? 'b' : 'w';
+                }
+            }
+
+            renderBoard();
+            if (checkersGameOver) {
+                showEndModal();
+            }
+        }
+
+        /* =========================================================
+           ЗАГРУЗКА И СОХРАНЕНИЕ НАСТРОЕК
+           ========================================================= */
+        try {
+            const savedWins = localStorage.getItem('chess2p_wins');
+            if (savedWins) wins = JSON.parse(savedWins);
+            const savedTheme = localStorage.getItem('chess2p_theme');
+            if (savedTheme && BOARD_THEMES.some(t => t.id === savedTheme)) currentBoardTheme = savedTheme;
+            const savedChessPieces = localStorage.getItem('chess2p_pieces');
+            if (savedChessPieces && CHESS_PIECE_SETS.some(p => p.id === savedChessPieces)) currentChessPieceSet = savedChessPieces;
+            const savedCheckersPieces = localStorage.getItem('checkers2p_pieces');
+            if (savedCheckersPieces && CHECKERS_PIECE_SETS.some(p => p.id === savedCheckersPieces)) currentCheckersPieceSet = savedCheckersPieces;
+            const savedMode = localStorage.getItem('chess2p_viewmode_v2');
+            if (savedMode && ['faceTurn', 'splitFace', 'boardFlip'].includes(savedMode)) viewMode = savedMode;
+        } catch (e) {}
+
+        function savePrefs() {
+            try {
+                localStorage.setItem('chess2p_theme', currentBoardTheme);
+                localStorage.setItem('chess2p_pieces', currentChessPieceSet);
+                localStorage.setItem('checkers2p_pieces', currentCheckersPieceSet);
+                localStorage.setItem('chess2p_viewmode_v2', viewMode);
+            } catch (e) {}
+        }
+
+        /* =========================================================
+           МЕНЮ НАСТРОЕК
+           ========================================================= */
+        function initSetupUI() {
+            // Иконки выбора игры
+            document.getElementById('iconChessPreview').innerHTML = getChessPieceSVG('n', 'w', currentChessPieceSet);
+            document.getElementById('iconCheckersPreview').innerHTML = getCheckerSVG(true, 'b', currentCheckersPieceSet);
+
+            document.getElementById('cardGameChess').classList.toggle('active', gameType === 'chess');
+            document.getElementById('cardGameCheckers').classList.toggle('active', gameType === 'checkers');
+            document.getElementById('checkersRulesSection').style.display = gameType === 'checkers' ? 'block' : 'none';
+
+            // Правила шашек
+            document.querySelectorAll('#checkersRulesGrid .mode-card').forEach(card => {
+                card.classList.toggle('active', card.dataset.rule === checkersRule);
+            });
+
+            // Доски (12 тем)
+            const bGrid = document.getElementById('boardsGrid');
+            bGrid.innerHTML = '';
+            BOARD_THEMES.forEach(t => {
+                const div = document.createElement('div');
+                div.className = `board-option ${t.id === currentBoardTheme ? 'active' : ''}`;
+                div.onclick = () => {
+                    currentBoardTheme = t.id;
+                    applyBoardTheme();
+                    initSetupUI();
+                    renderBoard();
+                    savePrefs();
+                };
+                div.innerHTML = `
+                    <div class="board-swatch" style="border-color:${t.border}">
+                        <div style="background:${t.light}"></div>
+                        <div style="background:${t.dark}"></div>
+                        <div style="background:${t.dark}"></div>
+                        <div style="background:${t.light}"></div>
+                    </div>
+                    <div class="board-name">${t.name}</div>
+                `;
+                bGrid.appendChild(div);
+            });
+
+            // Фигуры (для выбранной игры)
+            const pGrid = document.getElementById('piecesGrid');
+            pGrid.innerHTML = '';
+
+            if (gameType === 'chess') {
+                document.getElementById('piecesSectionTitle').textContent = '4. Выберите стиль шахматных фигур (8 коллекций)';
+                CHESS_PIECE_SETS.forEach(ps => {
+                    const div = document.createElement('div');
+                    div.className = `piece-option ${ps.id === currentChessPieceSet ? 'active' : ''}`;
+                    div.onclick = () => {
+                        currentChessPieceSet = ps.id;
+                        initSetupUI();
+                        renderBoard();
+                        savePrefs();
+                    };
+                    div.innerHTML = `
+                        <div class="piece-preview-box">
+                            ${getChessPieceSVG('k', 'w', ps.id)}
+                            ${getChessPieceSVG('n', 'b', ps.id)}
+                        </div>
+                        <div class="piece-style-name">${ps.name}</div>
+                    `;
+                    pGrid.appendChild(div);
+                });
+            } else {
+                document.getElementById('piecesSectionTitle').textContent = '4. Выберите стиль шашек (6 коллекций)';
+                CHECKERS_PIECE_SETS.forEach(ps => {
+                    const div = document.createElement('div');
+                    div.className = `piece-option ${ps.id === currentCheckersPieceSet ? 'active' : ''}`;
+                    div.onclick = () => {
+                        currentCheckersPieceSet = ps.id;
+                        initSetupUI();
+                        renderBoard();
+                        savePrefs();
+                    };
+                    div.innerHTML = `
+                        <div class="piece-preview-box">
+                            ${getCheckerSVG(false, 'w', ps.id)}
+                            ${getCheckerSVG(true, 'b', ps.id)}
+                        </div>
+                        <div class="piece-style-name">${ps.name}</div>
+                    `;
+                    pGrid.appendChild(div);
+                });
+            }
+
+            // Режимы автоповорота
+            document.querySelectorAll('#viewModeGrid .mode-card').forEach(card => {
+                card.classList.toggle('active', card.dataset.mode === viewMode);
+            });
+
+            updateTopButtonsText();
+        }
+
+        function selectGameType(type) {
+            if (gameType !== type) {
+                gameType = type;
+                restartMatch();
+            }
+            initSetupUI();
+        }
+
+        function selectCheckersRule(rule) {
+            checkersRule = rule;
+            restartMatch();
+            initSetupUI();
+        }
+
+        function switchGameQuick() {
+            selectGameType(gameType === 'chess' ? 'checkers' : 'chess');
+        }
+
+        function applyBoardTheme() {
+            const t = BOARD_THEMES.find(x => x.id === currentBoardTheme) || BOARD_THEMES[0];
+            const root = document.documentElement;
+            root.style.setProperty('--sq-light', t.light);
+            root.style.setProperty('--sq-dark', t.dark);
+            root.style.setProperty('--board-border', t.border);
+            root.style.setProperty('--board-inner', t.inner);
+        }
+
+        function selectViewMode(mode) {
+            viewMode = mode;
+            savePrefs();
+            initSetupUI();
+            renderBoard();
+        }
+
+        function cycleViewModeQuick() {
+            const order = ['faceTurn', 'splitFace', 'boardFlip'];
+            const nextIdx = (order.indexOf(viewMode) + 1) % order.length;
+            selectViewMode(order[nextIdx]);
+        }
+
+        function updateTopButtonsText() {
+            const mBtn = document.getElementById('quickModeBtn');
+            if (mBtn) {
+                if (viewMode === 'faceTurn') mBtn.textContent = 'Поворот: К ходящему';
+                else if (viewMode === 'splitFace') mBtn.textContent = 'Поворот: Свои к себе';
+                else mBtn.textContent = 'Поворот: Вся доска';
+            }
+            const gBtn = document.getElementById('quickSwitchGameBtn');
+            const gLabel = document.getElementById('gameModeLabel');
+            if (gameType === 'chess') {
+                if (gBtn) gBtn.textContent = 'В Шашки';
+                if (gLabel) gLabel.textContent = 'Шахматы';
+            } else {
+                const ruleNames = { russian: 'Русские шашки', english: 'Англ. шашки', giveaway: 'Поддавки' };
+                if (gBtn) gBtn.textContent = 'В Шахматы';
+                if (gLabel) gLabel.textContent = ruleNames[checkersRule] || 'Шашки';
+            }
+        }
+
+        function openSetup() {
+            document.getElementById('endModal').style.display = 'none';
+            initSetupUI();
+            document.getElementById('startScreen').style.display = 'flex';
+        }
+
+        function closeSetup(goFull) {
+            document.getElementById('startScreen').style.display = 'none';
+            if (goFull && !document.fullscreenElement) {
+                toggleFullScreen();
+            }
+            renderBoard();
+        }
+
+        /* =========================================================
+           ЛОГИКА ОРИЕНТАЦИИ ДОСКИ И ПОВОРОТА К ИГРОКУ У КАМЕРЫ
+           ========================================================= */
+        function getCurrentTurn() {
+            return gameType === 'chess' ? chessGame.turn() : checkersTurn;
+        }
+
+        // Переворачивается ли сама сетка координат (только в режиме 'boardFlip')
+        function isBoardGridFlipped() {
+            if (viewMode === 'boardFlip') {
+                return getCurrentTurn() === 'b';
+            }
+            return false; // В режимах 'faceTurn' и 'splitFace' Белые всегда у нижнего края телефона, а Чёрные у верхнего (у камеры)!
+        }
+
+        // Должна ли фигура цвета pieceColor быть развёрнута на 180° (лицом к верхнему игроку у камеры телефона)
+        function shouldRotatePieceToTop(pieceColor) {
+            const turn = getCurrentTurn();
+            if (viewMode === 'faceTurn') {
+                // После хода нижнего игрока ВСЕ фигуры поворачиваются на 180° лицом к верхнему игроку (где камера телефона)!
+                return turn === 'b';
+            }
+            if (viewMode === 'splitFace') {
+                // Чёрные фигуры всегда смотрят на верхнего игрока, Белые — на нижнего
+                return pieceColor === 'b';
+            }
+            // В режиме 'boardFlip' сама сетка крутится, поэтому фигуры внутри клеток стоят прямо
+            return false;
+        }
+
+        /* =========================================================
+           ОТРИСОВКА ДОСКИ (ШАХМАТЫ + ШАШКИ)
+           ========================================================= */
+        function renderBoard() {
+            const boardEl = document.getElementById('board');
+            boardEl.innerHTML = '';
+
+            const turn = getCurrentTurn();
+            const gridFlipped = isBoardGridFlipped();
+            const rotateCoordsToTop = (viewMode === 'faceTurn' && turn === 'b');
+
+            if (gameType === 'chess') {
+                const grid = chessGame.board();
+                const inCheck = chessGame.in_check();
+
+                for (let displayR = 0; displayR < 8; displayR++) {
+                    for (let displayC = 0; displayC < 8; displayC++) {
+                        const r = gridFlipped ? 7 - displayR : displayR;
+                        const c = gridFlipped ? 7 - displayC : displayC;
+
+                        const sq = files[c] + ranks[r];
+                        const isLight = (r + c) % 2 === 0;
+                        const piece = grid[r][c];
+
+                        const cell = document.createElement('div');
+                        cell.className = `sq ${isLight ? 'sq-light' : 'sq-dark'}`;
+
+                        if (selectedSq === sq) cell.classList.add('sq-selected');
+                        if (lastMove && (lastMove.from === sq || lastMove.to === sq)) cell.classList.add('sq-last');
+                        if (inCheck && piece && piece.type === 'k' && piece.color === turn) {
+                            cell.classList.add('sq-check');
+                        }
+
+                        if (displayC === 0) {
+                            const rl = document.createElement('span');
+                            rl.className = `coord-rank ${rotateCoordsToTop ? 'coord-rot' : ''}`;
+                            rl.style.color = isLight ? 'var(--sq-dark)' : 'var(--sq-light)';
+                            rl.textContent = ranks[r];
+                            cell.appendChild(rl);
+                        }
+                        if (displayR === 7) {
+                            const fl = document.createElement('span');
+                            fl.className = `coord-file ${rotateCoordsToTop ? 'coord-rot' : ''}`;
+                            fl.style.color = isLight ? 'var(--sq-dark)' : 'var(--sq-light)';
+                            fl.textContent = files[c];
+                            cell.appendChild(fl);
+                        }
+
+                        if (piece) {
+                            const wrap = document.createElement('div');
+                            wrap.className = 'piece-wrap';
+                            if (shouldRotatePieceToTop(piece.color)) {
+                                wrap.classList.add('rotate-to-top');
+                            }
+                            wrap.innerHTML = getChessPieceSVG(piece.type, piece.color);
+                            cell.appendChild(wrap);
+                        }
+
+                        const moveHint = validMoves.find(m => m.to === sq);
+                        if (moveHint) {
+                            const hint = document.createElement('div');
+                            const isCapture = Boolean(piece) || moveHint.flags.includes('e') || moveHint.flags.includes('c');
+                            hint.className = isCapture ? 'hint-capture' : 'hint-dot';
+                            cell.appendChild(hint);
+                        }
+
+                        cell.onclick = () => onChessSquareClick(sq);
+                        boardEl.appendChild(cell);
+                    }
+                }
+            } else {
+                // ОТРИСОВКА ШАШЕК
+                const allLegal = getAllCheckersLegalMoves(checkersTurn);
+                const hasMandatoryCapture = allLegal.some(m => m.captured !== null);
+
+                for (let displayR = 0; displayR < 8; displayR++) {
+                    for (let displayC = 0; displayC < 8; displayC++) {
+                        const r = gridFlipped ? 7 - displayR : displayR;
+                        const c = gridFlipped ? 7 - displayC : displayC;
+
+                        const sq = files[c] + ranks[r];
+                        const isLight = (r + c) % 2 === 0;
+                        const piece = checkersBoard[r][c];
+
+                        const cell = document.createElement('div');
+                        cell.className = `sq ${isLight ? 'sq-light' : 'sq-dark'}`;
+
+                        if (checkersSelected && checkersSelected.r === r && checkersSelected.c === c) {
+                            cell.classList.add('sq-selected');
+                        }
+                        if (lastMove && (lastMove.from === sq || lastMove.to === sq)) {
+                            cell.classList.add('sq-last');
+                        }
+
+                        // Подсветка шашек, которые обязаны бить
+                        if (hasMandatoryCapture && piece && piece.color === checkersTurn) {
+                            const canThisCapture = allLegal.some(m => m.fromR === r && m.fromC === c);
+                            if (canThisCapture) cell.classList.add('sq-must');
+                        }
+
+                        if (displayC === 0) {
+                            const rl = document.createElement('span');
+                            rl.className = `coord-rank ${rotateCoordsToTop ? 'coord-rot' : ''}`;
+                            rl.style.color = isLight ? 'var(--sq-dark)' : 'var(--sq-light)';
+                            rl.textContent = ranks[r];
+                            cell.appendChild(rl);
+                        }
+                        if (displayR === 7) {
+                            const fl = document.createElement('span');
+                            fl.className = `coord-file ${rotateCoordsToTop ? 'coord-rot' : ''}`;
+                            fl.style.color = isLight ? 'var(--sq-dark)' : 'var(--sq-light)';
+                            fl.textContent = files[c];
+                            cell.appendChild(fl);
+                        }
+
+                        if (piece) {
+                            const wrap = document.createElement('div');
+                            wrap.className = 'piece-wrap';
+                            if (shouldRotatePieceToTop(piece.color)) {
+                                wrap.classList.add('rotate-to-top');
+                            }
+                            wrap.innerHTML = getCheckerSVG(piece.king, piece.color);
+                            cell.appendChild(wrap);
+                        }
+
+                        const moveHint = checkersValidMoves.find(m => m.toR === r && m.toC === c);
+                        if (moveHint) {
+                            const hint = document.createElement('div');
+                            hint.className = moveHint.captured ? 'hint-capture' : 'hint-dot';
+                            cell.appendChild(hint);
+                        }
+
+                        cell.onclick = () => handleCheckersSquareClick(r, c);
+                        boardEl.appendChild(cell);
+                    }
+                }
+            }
+
+            updateStatusAndBars(gridFlipped);
+        }
+
+        /* =========================================================
+           ОБРАБОТКА ХОДОВ В ШАХМАТАХ
+           ========================================================= */
+        function onChessSquareClick(sq) {
+            if (chessGame.game_over()) return;
+
+            const move = validMoves.find(m => m.to === sq);
+            if (selectedSq && move) {
+                if (move.flags.includes('p')) {
+                    showPromotionModal(selectedSq, sq, chessGame.turn());
+                    return;
+                }
+                executeChessMove(selectedSq, sq, 'q');
+                return;
+            }
+
+            const clickedPiece = chessGame.get(sq);
+            if (clickedPiece && clickedPiece.color === chessGame.turn()) {
+                if (selectedSq === sq) {
+                    selectedSq = null;
+                    validMoves = [];
+                } else {
+                    selectedSq = sq;
+                    validMoves = chessGame.moves({ square: sq, verbose: true });
+                }
+            } else {
+                selectedSq = null;
+                validMoves = [];
+            }
+
+            renderBoard();
+        }
+
+        function executeChessMove(from, to, promoType) {
+            const moveObj = chessGame.move({ from, to, promotion: promoType });
+            if (!moveObj) return;
+
+            selectedSq = null;
+            validMoves = [];
+            lastMove = { from: moveObj.from, to: moveObj.to };
+
+            renderBoard();
+
+            if (chessGame.game_over()) {
+                showEndModal();
+            }
+        }
+
+        function showPromotionModal(from, to, color) {
+            const modal = document.getElementById('promoModal');
+            const card = document.getElementById('promoCard');
+            const grid = document.getElementById('promoGrid');
+            grid.innerHTML = '';
+
+            // Если превращает верхний игрок (у камеры), поворачиваем модальное окно к нему
+            if (viewMode !== 'boardFlip' && color === 'b') {
+                card.classList.add('rotated-modal');
+            } else {
+                card.classList.remove('rotated-modal');
+            }
+
+            ['q', 'r', 'b', 'n'].forEach(type => {
+                const btn = document.createElement('button');
+                btn.className = 'promo-btn';
+                btn.innerHTML = getChessPieceSVG(type, color);
+                btn.onclick = () => {
+                    modal.style.display = 'none';
+                    executeChessMove(from, to, type);
+                };
+                grid.appendChild(btn);
+            });
+
+            modal.style.display = 'flex';
+        }
+
+        /* =========================================================
+           ПАНЕЛИ ИГРОКОВ И СТАТУС ХОДА
+           ========================================================= */
+        function updateStatusAndBars(gridFlipped) {
+            const turn = getCurrentTurn();
+            const badge = document.getElementById('turnBadge');
+
+            // Если ход Чёрных и включён режим игры друг напротив друга, плашка хода поворачивается к верхнему игроку
+            if (viewMode !== 'boardFlip' && turn === 'b') {
+                badge.classList.add('rotated-ui');
+            } else {
+                badge.classList.remove('rotated-ui');
+            }
+
+            if (gameType === 'chess' && chessGame.in_check()) {
+                badge.textContent = turn === 'w' ? 'ШАХ! Ход белых' : 'ШАХ! Ход чёрных';
+                badge.style.background = '#fee2e2';
+                badge.style.color = '#b91c1c';
+                badge.style.borderColor = '#f87171';
+            } else {
+                badge.textContent = turn === 'w' ? 'Ход белых' : 'Ход чёрных';
+                badge.style.background = turn === 'w' ? '#f9fafb' : '#111827';
+                badge.style.color = turn === 'w' ? '#111827' : '#ffffff';
+                badge.style.borderColor = '#d1d5db';
+            }
+
+            let wHtml = '', bHtml = '', wScore = 0, bScore = 0;
+
+            if (gameType === 'chess') {
+                const history = chessGame.history({ verbose: true });
+                const eatenByWhite = [];
+                const eatenByBlack = [];
+
+                history.forEach(m => {
+                    if (m.captured) {
+                        const pts = piecePoints[m.captured] || 0;
+                        if (m.color === 'w') {
+                            eatenByWhite.push(m.captured);
+                            wScore += pts;
+                        } else {
+                            eatenByBlack.push(m.captured);
+                            bScore += pts;
+                        }
+                    }
+                });
+
+                const sortOrder = { q: 1, r: 2, b: 3, n: 4, p: 5 };
+                eatenByWhite.sort((a, b) => sortOrder[a] - sortOrder[b]);
+                eatenByBlack.sort((a, b) => sortOrder[a] - sortOrder[b]);
+
+                wHtml = eatenByWhite.map(t => getChessPieceSVG(t, 'b')).join('');
+                bHtml = eatenByBlack.map(t => getChessPieceSVG(t, 'w')).join('');
+            } else {
+                wScore = checkersCapturedCount.w;
+                bScore = checkersCapturedCount.b;
+                wHtml = Array.from({ length: wScore }, () => getCheckerSVG(false, 'b')).join('');
+                bHtml = Array.from({ length: bScore }, () => getCheckerSVG(false, 'w')).join('');
+            }
+
+            const diff = wScore - bScore;
+            const wAdvText = diff > 0 ? `(+${diff})` : '';
+            const bAdvText = diff < 0 ? `(+${Math.abs(diff)})` : '';
+
+            const topBar = document.getElementById('topPlayerBar');
+            const bottomBar = document.getElementById('bottomPlayerBar');
+
+            // Верхняя плашка всегда развёрнута на 180 градусов к игроку у камеры телефона (кроме режима переворота всей доски)
+            if (viewMode !== 'boardFlip') {
+                topBar.classList.add('rotated-top');
+            } else {
+                topBar.classList.remove('rotated-top');
+            }
+
+            if (gridFlipped) {
+                // Если включён режим полного переворота доски и сейчас ход Чёрных
+                topBar.classList.toggle('active-turn-bar', turn === 'w');
+                bottomBar.classList.toggle('active-turn-bar', turn === 'b');
+
+                document.getElementById('topPlayerLabel').textContent = 'Белые съели:';
+                document.getElementById('topCapturedRow').innerHTML = wHtml;
+                document.getElementById('topScore').textContent = wScore;
+                document.getElementById('topAdv').textContent = wAdvText;
+                document.getElementById('topActiveDot').style.display = turn === 'w' ? 'inline-block' : 'none';
+
+                document.getElementById('bottomPlayerLabel').textContent = 'Чёрные съели:';
+                document.getElementById('bottomCapturedRow').innerHTML = bHtml;
+                document.getElementById('bottomScore').textContent = bScore;
+                document.getElementById('bottomAdv').textContent = bAdvText;
+                document.getElementById('bottomActiveDot').style.display = turn === 'b' ? 'inline-block' : 'none';
+            } else {
+                // Стандартное расположение за столом: Чёрные сверху (у камеры), Белые снизу
+                topBar.classList.toggle('active-turn-bar', turn === 'b');
+                bottomBar.classList.toggle('active-turn-bar', turn === 'w');
+
+                document.getElementById('topPlayerLabel').textContent = 'Чёрные съели:';
+                document.getElementById('topCapturedRow').innerHTML = bHtml;
+                document.getElementById('topScore').textContent = bScore;
+                document.getElementById('topAdv').textContent = bAdvText;
+                document.getElementById('topActiveDot').style.display = turn === 'b' ? 'inline-block' : 'none';
+
+                document.getElementById('bottomPlayerLabel').textContent = 'Белые съели:';
+                document.getElementById('bottomCapturedRow').innerHTML = wHtml;
+                document.getElementById('bottomScore').textContent = wScore;
+                document.getElementById('bottomAdv').textContent = wAdvText;
+                document.getElementById('bottomActiveDot').style.display = turn === 'w' ? 'inline-block' : 'none';
+            }
+        }
+
+        function updateWinsUI() {
+            document.getElementById('wWins').textContent = wins.w;
+            document.getElementById('bWins').textContent = wins.b;
+        }
+
+        function showEndModal() {
+            const modal = document.getElementById('endModal');
+            const title = document.getElementById('endTitle');
+            const text = document.getElementById('endText');
+
+            if (gameType === 'chess') {
+                if (chessGame.in_checkmate()) {
+                    const winner = chessGame.turn() === 'w' ? 'b' : 'w';
+                    if (winner === 'w') {
+                        wins.w++;
+                        title.textContent = 'Победа Белых!';
+                        text.textContent = 'Белые поставили мат чёрному королю.';
+                    } else {
+                        wins.b++;
+                        title.textContent = 'Победа Чёрных!';
+                        text.textContent = 'Чёрные поставили мат белому королю.';
+                    }
+                    try { localStorage.setItem('chess2p_wins', JSON.stringify(wins)); } catch (e) {}
+                    updateWinsUI();
+                } else if (chessGame.in_stalemate()) {
+                    title.textContent = 'Ничья — Пат!';
+                    text.textContent = 'У ходящей стороны нет допустимых ходов, но король не под шахом.';
+                } else {
+                    title.textContent = 'Ничья!';
+                    text.textContent = 'Партия завершена вничью по правилам ФИДЕ.';
+                }
+            } else {
+                if (checkersWinner === 'w') {
+                    wins.w++;
+                    title.textContent = 'Победа Белых!';
+                    text.textContent = checkersRule === 'giveaway'
+                        ? 'Белые первыми отдали все свои шашки (Поддавки)!'
+                        : 'У Чёрных не осталось шашек или доступных ходов.';
+                } else {
+                    wins.b++;
+                    title.textContent = 'Победа Чёрных!';
+                    text.textContent = checkersRule === 'giveaway'
+                        ? 'Чёрные первыми отдали все свои шашки (Поддавки)!'
+                        : 'У Белых не осталось шашек или доступных ходов.';
+                }
+                try { localStorage.setItem('chess2p_wins', JSON.stringify(wins)); } catch (e) {}
+                updateWinsUI();
+            }
+
+            modal.style.display = 'flex';
+        }
+
+        function restartMatch() {
+            document.getElementById('endModal').style.display = 'none';
+            document.getElementById('promoModal').style.display = 'none';
+            if (gameType === 'chess') {
+                chessGame.reset();
+                selectedSq = null;
+                validMoves = [];
+                lastMove = null;
+            } else {
+                initCheckersGame();
+            }
+            updateTopButtonsText();
+            renderBoard();
+        }
+
+        function toggleFullScreen() {
+            const el = document.documentElement;
+            if (!document.fullscreenElement) {
+                if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+            }
+        }
+
+        document.addEventListener('fullscreenchange', () => {
+            const btn = document.getElementById('fsBtn');
+            if (btn) btn.textContent = document.fullscreenElement ? 'Обычный экран' : 'На весь экран';
+        });
+
+        // Старт
+        initCheckersGame();
+        applyBoardTheme();
+        updateWinsUI();
+        initSetupUI();
+        renderBoard();
+    </script>
+</body>
+</html>
